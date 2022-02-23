@@ -1,0 +1,38 @@
+// Baseline Method
+Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:'A_Create Application'})
+Match path = (e:Event{activity:'A_Concept'})-[:DF*..]-> (events) where none(n in nodes(path) where n.activity= 'A_Submitted') return c.name
+union all
+Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:'A_Create Application'})
+Match path = (e:Event{activity:'A_Concept'})-[:DF*..]-> (events) where any(n in nodes(path) where n.activity = 'A_Submitted' and ((n.cT - e.sT)/3600 >2) )  return c.name
+
+// Precedence anti-pattern over position encoded method
+
+Match (c:Case)
+where  (c)<-[:EVENT_TO_CASE]-(:Event{activity:'A_Concept'}) and not exists ((c)<-[:EVENT_TO_CASE]-(:Event{activity:'A_Submitted'})) 
+return distinct c.name
+union all 
+Match (c:Case),(c)<-[:EVENT_TO_CASE]-(b:Event{activity:'A_Concept'}),(c)<-[:EVENT_TO_CASE]-(a:Event{activity:'A_Submitted'})
+where a.position > b.position
+return distinct c.name
+
+// Precedence anti-pattern over Event-position Encoded Method
+
+Match (c:Case),(b:Event{event:'A_Concept'}),(a:Event) 
+where (c)-[:Case_To_Event]->(b) and not exists((c)-[:Case_To_Event]->(:Event{event:'A_Submitted'})) 
+return distinct c.name 
+union all 
+Match (c:Case)-[r1:Case_To_Event]->(b:Event{event:'A_Concept'}),(c:case) -[r2:Case_To_Event]->(a:Event{event:'A_Submitted'}) 
+where a.position > b.position and ((toFloat(r2.completeTime) - toFloat(r1.startTime))/3600 > 2) 
+return distinct c.name
+
+// Precedence anti-pattern over Unique-Event Encoded Method
+
+Match (c:Case), (c:Case)-[r1:Case_To_Event]->(b:Event{name:'A_Concept'}),(e:Event{name:'A_Submitted'})
+where (c)-[:Case_To_Event]->(:Event{name:'A_Concept'}) and not exists((c)-[:Case_To_Event]->(e)) 
+return distinct c.name  
+union all 
+Match (c:Case), (c:Case)-[r1:Case_To_Event]->(b:Event{name:'A_Concept'}), (c:Case)-[r2:Case_To_Event]->(a:Event{name:'A_Submitted'}) 
+where r2.position > r1.position 
+return distinct c.name
+
+
