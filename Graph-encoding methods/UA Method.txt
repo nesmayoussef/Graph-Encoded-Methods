@@ -1,0 +1,17 @@
+CREATE CONSTRAINT ON (e:Event) ASSERT e.name IS UNIQUE;
+CREATE CONSTRAINT ON (c:Case) ASSERT c.name IS UNIQUE;
+
+LOAD CSV WITH HEADERS FROM "$filename" as line
+WITH line.case as case
+MERGE (c:Case {name: case})
+
+LOAD CSV WITH HEADERS FROM "$filename" as line
+WITH line.event as activity
+MERGE (e:Event {name: activity})
+
+LOAD CSV WITH HEADERS FROM "$filename" as line
+MATCH(c:Case), (e:Event)
+WHERE c.name = line.case and e.name = line.event
+CREATE (c) -[:Case_To_Event{startTime:line.sT,completeTime:line.cT,position:line.position}]-> (e)
+
+

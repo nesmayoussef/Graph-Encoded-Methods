@@ -1,0 +1,36 @@
+CREATE CONSTRAINT ON (e:Event) ASSERT e.name IS UNIQUE;
+CREATE CONSTRAINT ON (c:Case) ASSERT c.name IS UNIQUE;
+
+LOAD CSV WITH HEADERS FROM "$filename" as line
+WITH line.case as case
+MERGE (c:Case {name: case});
+
+LOAD CSV WITH HEADERS FROM "$filename" as line
+WITH line.case as case, 
+    line.EventID as event,  
+    line.EventOrigin as eventClass,
+    line.event as activity,
+    line.Action as action,
+    line.startTime as startTime,    
+    line.completeTime as completeTime,
+    line.OfferID as offer,
+    line.position as position,
+    line.sT as sT,
+    line.cT as cT,
+    line.case_index as cIndex,
+    line.offer_index as oIndex,
+    line.application_index as aIndex,
+    line.workflow_index as wIndex,
+    line.sY as sY, line.sD as sD, line.sM as sM, line.sHH as sHH, line.sMM as sMM, line.sSS as sSS, line.sMS as sMS,
+    line.cY as cY, line.cD as cD, line.cM as cM, line.cHH as cHH, line.cMM as cMM, line.cSS as cSS, line.cMS as cMS
+MATCH (c:Case {name: case})
+CREATE (e:Event {name: event, 
+    starttime: localdatetime({year:toInteger(sY), month:toInteger(sM), day:toInteger(sD), hour:toInteger(sHH), minute:toInteger(sMM), second:toInteger(sSS), microsecond:toInteger(sMS)}), 
+    completetime: localdatetime({year:toInteger(cY), month:toInteger(cM), day:toInteger(cD), hour:toInteger(cHH), minute:toInteger(cMM), second:toInteger(cSS), microsecond:toInteger(cMS)}), 
+    activity: activity, class: eventClass, action: action, offerid: offer, position: toInteger(position), caseindex: toInteger(cIndex), offerindex: toInteger(oIndex), applicationindex: toInteger(aIndex), workflowindex: toInteger(wIndex),sT: toFloat(sT),cT:toFloat(cT)})
+CREATE (e) -[:EVENT_TO_CASE]-> (c);
+
+MATCH (e1:Event) --> (c:Case) <-- (e2:Event)
+WHERE e2.caseindex - e1.caseindex = 1
+CREATE (e2) -[:DF {timebetween: duration.between(e1.cT, e2.sT) }]-> (e1)
+
