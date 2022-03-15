@@ -1,28 +1,4 @@
-1-Baseline: Multidimensional Graph Modeling. (BA)
-
-// First query, with no time limit
-Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity})
-Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events)
-where none(n in nodes(path) where n.activity= $activity_a) return distinct c.name
-
-// Second query, within time limit
-Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity })
-Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events) where none(n in nodes(path) where n.activity= $activity_a) return c.name
-union all
-Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity })
-Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events) where any(n in nodes(path) where n.activity = $activity_a and (((e.sT-n.sT) /3600 < 2) and ((e.sT-n.sT) /3600 > 10)) )  return c.name
-
-// Third query, after time limit
-Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity })
-Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events) where none(n in nodes(path) where n.activity= $activity_a) return c.name
-union all
-Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity })
-Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events) where any(n in nodes(path) where n.activity = $activity_a and (((e.sT-n.sT) /3600 < 2)) )  return c.name
-
-
-////////////////////////
-
-2-Explicit Position Encoding (EP)
+1-Explicit Position Encoding (EP)
 
 // First query with no time limit
 Match (c:Case) where (c)<-[:EVENT_TO_CASE]-(:Event{activity:$activity_a}) and not exists ((c)<-[:EVENT_TO_CASE]-(:Event{activity:$activity_b})) return distinct c.name as casename 
@@ -48,7 +24,7 @@ return distinct c.name
 
 ////////////////////////
 
-3-Unique Activities (UA)
+2-Unique Activities (UA)
 
 // First query with no time limit
 Match (c:Case)
@@ -71,3 +47,26 @@ where (c)-[:Case_To_Event]->(:Event{name: $activity_b }) and not exists((c)-[:Ca
 union all 
 Match (a:Event{name: $activity_a })<-[r1:Case_To_Event]-(c:Case)-[r2:Case_To_Event]->(b:Event{name: $activity_b })
 where toInteger(r1.position) < toInteger(r2.position) and ((toFloat(r2.startTime) - toFloat(r1. startTime))/3600 < 2) return distinct c.name
+
+////////////////////////////////
+
+3-Baseline: Multidimensional Graph Modeling. (BA)
+
+// First query, with no time limit
+Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity})
+Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events)
+where none(n in nodes(path) where n.activity= $activity_a) return distinct c.name
+
+// Second query, within time limit
+Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity })
+Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events) where none(n in nodes(path) where n.activity= $activity_a) return c.name
+union all
+Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity })
+Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events) where any(n in nodes(path) where n.activity = $activity_a and (((e.sT-n.sT) /3600 < 2) and ((e.sT-n.sT) /3600 > 10)) )  return c.name
+
+// Third query, after time limit
+Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity })
+Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events) where none(n in nodes(path) where n.activity= $activity_a) return c.name
+union all
+Match (c:Case)<-[:EVENT_TO_CASE]-(events:Event{activity:$startactivity })
+Match path = (e:Event{activity:$activity_b })<-[:DF*..]- (events) where any(n in nodes(path) where n.activity = $activity_a and (((e.sT-n.sT) /3600 < 2)) )  return c.name
