@@ -1,0 +1,7 @@
+1-Exclude ( without time window)
+
+Match (:Event{name:'OLO messaging active'})<-[r1:Case_To_Event]-(c:Case)-[r2:Case_To_Event]->(:Event{name:'send confirmation receipt'})
+,(:Event{name:'request complete'})<-[r3:Case_To_Event]-(c:Case)
+ where tointeger(r1.position) < tointeger(r2.position) a
+nd tointeger(r2.position) < tointeger(r3.position) 
+Return distinct c.name

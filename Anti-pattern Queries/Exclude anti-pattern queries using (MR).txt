@@ -1,0 +1,56 @@
+Exclude (without time window):
+
+select distinct case_ID
+from My_log_2015_2 MATCH_RECOGNIZE(
+     PARTITION BY Case_ID
+     ORDER BY Time_stamp
+     ONE ROW PER MATCH
+     AFTER MATCH SKIP TO NEXT ROW
+     PATTERN (A S* B)
+     DEFINE
+              A AS Activity_ID = 'OLO messaging active',
+              S AS S.Activity_ID <> 'OLO messaging active' AND S.Activity_ID <> 'END' AND S.Activity_ID <> 'send confirmation receipt' AND S.Activity_ID <> 'request complete',
+              B AS ((B.Activity_ID = 'send confirmation receipt' )) 
+     )
+union
+select distinct case_ID
+from My_log_2015_2 MATCH_RECOGNIZE(
+     PARTITION BY Case_ID
+     ORDER BY Time_stamp
+     ONE ROW PER MATCH
+     AFTER MATCH SKIP TO NEXT ROW
+     PATTERN (A S* E )
+     DEFINE
+              A AS Activity_ID = 'OLO messaging active',
+              S AS S.Activity_ID <> 'OLO messaging active' AND S.Activity_ID <> 'send confirmation receipt',
+              E AS E.Activity_ID = 'END'
+     );
+
+////////////////////
+Exclude with time window:
+
+select distinct case_ID
+from My_log_2015_2 MATCH_RECOGNIZE(
+     PARTITION BY Case_ID
+     ORDER BY Time_stamp
+     ONE ROW PER MATCH
+     AFTER MATCH SKIP TO NEXT ROW
+     PATTERN (A S* B)
+     DEFINE
+              A AS Activity_ID = 'OLO messaging active',
+              S AS S.Activity_ID <> 'OLO messaging active' AND S.Activity_ID <> 'END' AND S.Activity_ID <> 'send confirmation receipt' AND S.Activity_ID <> 'request complete',
+              B AS ((B.Activity_ID = 'send confirmation receipt' AND  (B.Time_stamp - A.time_stamp) > interval '20' minute)) 
+     )
+union
+select distinct case_ID
+from My_log_2015_2 MATCH_RECOGNIZE(
+     PARTITION BY Case_ID
+     ORDER BY Time_stamp
+     ONE ROW PER MATCH
+     AFTER MATCH SKIP TO NEXT ROW
+     PATTERN (A S* E )
+     DEFINE
+              A AS Activity_ID = 'OLO messaging active',
+              S AS S.Activity_ID <> 'OLO messaging active' AND S.Activity_ID <> 'send confirmation receipt',
+              E AS E.Activity_ID = 'END'
+     );
